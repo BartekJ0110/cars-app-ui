@@ -3,6 +3,7 @@ import {NavLink, useParams, useNavigate} from "react-router-dom";
 import axios from "axios";
 import { Car, FuelTypeMap, BodyTypeMap} from "./Models/Car";
 import {Button} from "semantic-ui-react";
+import {UserDto} from "./Models/User";
 
 export default function CarForm() {
     const { id } = useParams<{ id: string }>();
@@ -10,14 +11,30 @@ export default function CarForm() {
     const [car, setCar] = useState<Car | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null | Error>(null);
+    const [userDto, setUserDto] = useState<UserDto>({
+        displayname: sessionStorage.getItem("displayname") || '',
+        token: sessionStorage.getItem("token") || '',
+        username: sessionStorage.getItem("username") || ''
+    });
 
     useEffect(() => {
         const fetchCarById = async () => {
             try {
-                const response = await axios.get(`http://localhost:5179/api/Cars/${id}`)
+                const response = await axios.get(`http://localhost:5179/api/Cars/${id}`,{headers: {Authorization: 'Bearer ' + userDto.token},},)
                 setCar(response.data);
             } catch (e){
-                setError('Błąd');
+                if (axios.isAxiosError(e)){
+                    if (e.response?.status == 401){
+                        window.alert('Nieautoryzowany dostęp. Proszę się zalogować.');
+                        navigate('/login');
+                    }
+                    else {
+                        setError('Błąd podczas pobierania danych');
+                    }
+                }
+                else {
+                    setError('Błąd podczas pobierania danych');
+                }
             }finally {
                 setLoading(false);
             }

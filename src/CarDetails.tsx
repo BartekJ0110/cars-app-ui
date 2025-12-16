@@ -4,17 +4,23 @@ import axios from "axios";
 import {BodyTypeMap, Car, FuelTypeMap} from "./Models/Car";
 import {NavLink} from "react-router-dom";
 import {Button} from "semantic-ui-react";
+import {UserDto} from "./Models/User";
 
 export default function CarDetails() {
     const { id } = useParams<{id : string}>()
     const [car, setCar] = useState<Car | null>(null)
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
+    const [userDto, setUserDto] = useState<UserDto>({
+        displayname: sessionStorage.getItem("displayname") || '',
+        token: sessionStorage.getItem("token") || '',
+        username: sessionStorage.getItem("username") || ''
+    })
 
     useEffect(() => {
         const fetchCarById = async () => {
             try {
-                const response = await axios.get(`http://localhost:5179/api/Cars/${id}`)
+                const response = await axios.get(`http://localhost:5179/api/Cars/${id}`,{headers: {Authorization: 'Bearer ' + userDto.token},},)
                 setCar(response.data);
             } catch (e){
                 setError('Błąd');

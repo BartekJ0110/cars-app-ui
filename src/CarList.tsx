@@ -1,23 +1,40 @@
 import React, {useEffect, useState} from "react";
-import axios from 'axios';
+import axios, {AxiosHeaders} from 'axios';
 import { Car, FuelTypeMap, BodyTypeMap } from "./Models/Car";
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Button } from 'semantic-ui-react';
+import {Button, Header} from 'semantic-ui-react';
+import {UserDto} from "./Models/User";
 
 export default function CarList() {
     const [cars, setCars] = useState<Car[]>([]);
+    const [userDto, setUserDto] = useState<UserDto>({
+        displayname: sessionStorage.getItem("displayname") || '',
+        token: sessionStorage.getItem("token") || '',
+        username: sessionStorage.getItem("username") || ''
+    });
     const navigate = useNavigate();
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         setLoading(true);
-        axios.get<Car[]>('http://localhost:5179/api/cars')
+        axios.get<Car[]>('http://localhost:5179/api/cars',{headers: {Authorization: 'Bearer ' + userDto.token},},)
             .then((response) => {
                 setCars(response.data);
             })
-            .catch(() => {
-                setError('Error downloading cars');
+            .catch((err: unknown) => {
+                if (axios.isAxiosError(err)){
+                    if (err.response?.status == 401){
+                        window.alert('Nieautoryzowany dostęp. Proszę się zalogować.');
+                        navigate('/login');
+                    }
+                    else {
+                        setError('Błąd podczas pobierania danych');
+                    }
+                }
+                else {
+                    setError('Błąd podczas pobierania danych');
+                }
             })
             .finally(() => setLoading(false));
     },[])
@@ -25,7 +42,7 @@ export default function CarList() {
     const handleDelete = async (id: string) => {
         if (!window.confirm('Czy na pewno chcesz usunąć ten samochód?')) return;
         try {
-            await axios.delete(`http://localhost:5179/api/cars/${id}`);
+            await axios.delete(`http://localhost:5179/api/cars/${id}`,{headers: {Authorization: 'Bearer ' + userDto.token},},);
             window.alert('Samochód usunięty pomyślnie');
             setCars(cars.filter(car => car.id !== id));
         }

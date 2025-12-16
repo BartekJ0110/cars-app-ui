@@ -3,9 +3,15 @@ import {useNavigate} from "react-router-dom";
 import axios from "axios";
 import {BodyTypeMap, Car, FuelTypeMap} from "./Models/Car";
 import {Button} from "semantic-ui-react";
+import {UserDto} from "./Models/User";
 
 export default function CarAdd() {
     const navigate = useNavigate();
+    const [userDto, setUserDto] = useState<UserDto>({
+        displayname: sessionStorage.getItem("displayname") || '',
+        token: sessionStorage.getItem("token") || '',
+        username: sessionStorage.getItem("username") || ''
+    })
     const [car, setCar] = useState<Car>({
         id: undefined,
         brand: '',
@@ -30,12 +36,22 @@ export default function CarAdd() {
         e.preventDefault();
         if (car) {
             try{
-                await axios.post(`http://localhost:5179/api/Cars`, car);
+                await axios.post(`http://localhost:5179/api/Cars`, car,{headers: {Authorization: 'Bearer ' + userDto.token},},);
                 alert(`Samochód dodano pomyślnie!`);
                 navigate('/cars');
             }
             catch (e : any){
-                alert(e.toString());
+                if (axios.isAxiosError(e)){
+                    if (e.response?.status == 401){
+                        window.alert('Nieautoryzowany dostęp. Proszę się zalogować.');
+                        navigate('/login');
+                    }
+                    else {
+                    alert(e.toString());}
+                }
+                else {
+                    alert(e.toString());
+                }
             }
         }
     }
